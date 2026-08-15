@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
+/* Anfani / Tracksure brand tokens — source of truth: BRAND.md.
+   Same token set as anfani-admin-fe; the driver rules live at the bottom. */
+@theme {
+  --color-brand: #ffa300;
+  --color-brand-deep: #e0751a;
+  --color-brand-tint: #fef3ea;
+  --color-ink: #303030;
+  --color-ink-soft: #595959;
+  --color-line: #e5e5e4;
+  --color-surface: #f6f6f6;
+  --color-success: #1e8e3e;
+  --color-success-tint: #e9f5ec;
+  --color-warning: #b26a00;
+  --color-warning-tint: #fef3ea;
+  --color-danger: #c62828;
+  --color-danger-tint: #fdeaea;
+  --color-info: #1565c0;
+  --color-info-tint: #e9f1fb;
+
+  --font-sans: var(--font-albert), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-oxanium), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-lg: 0.625rem;
+}
+
+/* Gradient recipes (BRAND.md v2) — use via bg-[image:var(--grad-*)].
+   The driver app spends them sparingly: white ground, one orange action. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --grad-brand: linear-gradient(135deg, #ffb733 0%, #ffa300 48%, #f08414 100%);
+  --grad-bar: linear-gradient(180deg, #ffb340 0%, #e0751a 100%);
+  --grad-page: linear-gradient(180deg, #faf8f5 0%, #f3f1ee 100%);
+  --grad-hero: linear-gradient(160deg, #fff8ef 0%, #ffffff 55%, #fdf4e9 100%);
+  --grad-card: linear-gradient(180deg, #ffffff 0%, #fdfcfa 100%);
+  --grad-side: linear-gradient(180deg, #2e2e33 0%, #26262a 55%, #1f1f23 100%);
+  --shadow-card: 0 1px 2px rgba(30, 25, 15, 0.05), 0 4px 16px rgba(30, 25, 15, 0.05);
+  --glow-brand: 0 6px 20px rgba(255, 163, 0, 0.32);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Driver PWA ground: white, not the admin's gradient page. Sunlight contrast
+   beats prettiness here (BRAND.md per-app note, CLAUDE.md design language). */
+body {
+  background: #ffffff;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  /* 16px minimum body text — never smaller anywhere in this app. */
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Phones in trucks: no rubber-band, no accidental text selection on buttons,
+   no blue tap flash over the orange. */
+html {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+button,
+[role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* Every interactive thing clears 48px (BRAND.md driver density rule). */
+.tap {
+  min-height: 48px;
+}
+
+/* Focus ring: brand orange, thick enough to see on a scratched screen. */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* Loading shimmer — the one loading idiom, shared with the admin portal. */
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.skeleton {
+  background: linear-gradient(90deg, #eceae7 25%, #f5f3f0 50%, #eceae7 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* Safe-area padding for the installed standalone window (iOS notch, Android
+   gesture bar). Applied to the app shell, not the body, so sheets can bleed. */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
 }
