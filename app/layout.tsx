@@ -26,9 +26,10 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Tracksure",
   },
-  icons: {
-    apple: "/icons/apple-touch-icon.png",
-  },
+  // No `icons` here on purpose: app/favicon.ico, app/icon.svg and
+  // app/apple-icon.png are picked up by the file convention, which also fills
+  // in the right `sizes` and `type`. Declaring them again would only let the
+  // two lists drift apart.
 };
 
 export const viewport: Viewport = {
