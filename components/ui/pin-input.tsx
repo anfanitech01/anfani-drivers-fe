@@ -20,7 +20,13 @@ export function PinInput({
 }: {
   value: string;
   onChange: (value: string) => void;
-  onComplete?: () => void;
+  /**
+   * Fired on the 4th digit. It is handed the completed PIN because it runs
+   * inside the same `onChange` as the `setState` that produced it — a caller
+   * reading its own `value` here would still see three digits and silently do
+   * nothing.
+   */
+  onComplete?: (value: string) => void;
   label?: string;
   autoFocus?: boolean;
   disabled?: boolean;
@@ -85,10 +91,10 @@ export function PinInput({
           onChange={(e) => {
             const next = e.target.value.replace(/\D/g, "").slice(0, 4);
             onChange(next);
-            if (next.length === 4) onComplete?.();
+            if (next.length === 4) onComplete?.(next);
           }}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && value.length >= 4) onComplete?.();
+            if (e.key === "Enter" && value.length === 4) onComplete?.(value);
           }}
           className="absolute inset-0 h-full w-full cursor-pointer bg-transparent text-transparent caret-transparent"
           aria-label={label}

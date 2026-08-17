@@ -106,7 +106,8 @@ export function PinDeclaration({
             setPin(v);
             setError(null);
           }}
-          onComplete={submit}
+          // No auto-submit on the 4th digit: this is the driver's signature on
+          // an HSE document. Signing is a press they choose to make.
           label="Enter your PIN to sign"
           disabled={submitting}
         />

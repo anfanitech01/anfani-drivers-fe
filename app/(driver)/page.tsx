@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useTrip } from "@/lib/trip";
 import { daysUntil, formatDate, formatKm } from "@/lib/format";
@@ -21,7 +22,7 @@ import { StatusPill } from "@/components/ui/status-pill";
  * being waited on for.
  */
 export default function CurrentTripPage() {
-  const { driver, logout } = useAuth();
+  const { driver } = useAuth();
   const { data, reminders, loading, error, reload } = useTrip();
 
   if (loading && !data) return <LoadingScreen />;
@@ -62,19 +63,20 @@ export default function CurrentTripPage() {
             priority
             className="h-7 w-auto"
           />
-          <div className="ml-auto flex items-center gap-2">
-            <span className="max-w-32 truncate text-base font-medium text-ink-soft">
+          {/* The driver's name is the way into their account — sign out lives
+              there, not one stray tap from the trip screen. */}
+          <Link
+            href="/settings"
+            aria-label="Your account"
+            className="tap ml-auto flex items-center gap-2 rounded-[0.625rem] pl-3 pr-2 active:bg-surface"
+          >
+            <span className="max-w-28 truncate text-base font-medium text-ink-soft">
               {driver?.name}
             </span>
-            <button
-              type="button"
-              onClick={logout}
-              aria-label="Sign out"
-              className="flex size-12 shrink-0 items-center justify-center rounded-[0.625rem] text-ink-soft active:bg-surface"
-            >
-              <Icon name="log-out" className="size-6" />
-            </button>
-          </div>
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-tint text-brand-deep">
+              <Icon name="user-round" className="size-5" />
+            </span>
+          </Link>
         </div>
       </header>
 

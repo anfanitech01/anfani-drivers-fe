@@ -29,13 +29,18 @@ export default function LoginPage() {
     if (!sessionLoading && driver) router.replace("/");
   }, [sessionLoading, driver, router]);
 
-  async function submit(e?: React.FormEvent) {
+  /**
+   * `completedPin` comes from PinInput's `onComplete`, which fires in the same
+   * tick as its `setPin` — reading `pin` here would still see three digits.
+   */
+  async function submit(e?: React.FormEvent, completedPin?: string) {
     e?.preventDefault();
-    if (submitting || phone.trim().length < 10 || pin.length < 4) return;
+    const usePin = completedPin ?? pin;
+    if (submitting || phone.trim().length < 10 || usePin.length < 4) return;
     setSubmitting(true);
     setError(null);
     try {
-      await login(phone.trim(), pin);
+      await login(phone.trim(), usePin);
       router.replace("/");
     } catch (err) {
       setPin("");
@@ -95,7 +100,7 @@ export default function LoginPage() {
               setPin(v);
               setError(null);
             }}
-            onComplete={() => void submit()}
+            onComplete={(completed) => void submit(undefined, completed)}
             disabled={submitting}
           />
 
