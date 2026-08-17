@@ -246,6 +246,12 @@ export default function CurrentTripPage() {
                 note="See or add photos"
               />
               <ActionTile
+                href="/fuel"
+                icon="fuel"
+                title="Fuel stop"
+                note="Photograph the receipt"
+              />
+              <ActionTile
                 href="/complaint"
                 icon="message-square-warning"
                 title="Report a problem"

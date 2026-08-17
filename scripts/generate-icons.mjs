@@ -30,6 +30,8 @@ const NAMES = [
   "refresh-cw",
   "wifi-off",
   "fuel",
+  "receipt",
+  "search",
   "image",
   "x",
   "check",

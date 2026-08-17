@@ -3,9 +3,15 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
-import { formatDateTime, formatKm, formatLiters } from "@/lib/format";
+import { formatDateTime, formatKm, formatLiters, naira } from "@/lib/format";
 import { useTrip } from "@/lib/trip";
-import { tripFromDetail, type JourneyPlan, type Trip, type TripDetail } from "@/lib/types";
+import {
+  tripFromDetail,
+  type FuelReceipt,
+  type JourneyPlan,
+  type Trip,
+  type TripDetail,
+} from "@/lib/types";
 import { PinDeclaration } from "@/components/pin-declaration";
 import { Alert } from "@/components/ui/alert";
 import { AppBar } from "@/components/ui/app-bar";
@@ -49,6 +55,7 @@ function Summary() {
 
   const [plan, setPlan] = useState<JourneyPlan | null>(null);
   const [planLoading, setPlanLoading] = useState(true);
+  const [receipts, setReceipts] = useState<FuelReceipt[]>([]);
 
   const fetchTripById = useCallback(() => {
     if (!requestedTripId) return Promise.resolve();
@@ -73,6 +80,15 @@ function Summary() {
       .finally(() => setPlanLoading(false));
   }, [tripId]);
 
+  /** Real receipts, so "fuel logged vs estimate" is a fact and not a promise. */
+  const fetchReceipts = useCallback(() => {
+    if (!tripId) return Promise.resolve();
+    return api
+      .get<FuelReceipt[]>(`/driver-api/trips/${tripId}/fuel-receipts`)
+      .then((res) => setReceipts(Array.isArray(res) ? res : []))
+      .catch(() => setReceipts([]));
+  }, [tripId]);
+
   useEffect(() => {
     void fetchTripById();
   }, [fetchTripById]);
@@ -81,10 +97,19 @@ function Summary() {
     void fetchPlan();
   }, [fetchPlan]);
 
+  useEffect(() => {
+    void fetchReceipts();
+  }, [fetchReceipts]);
+
   const refresh = useCallback(async () => {
     setPlanLoading(true);
-    await Promise.all([fetchPlan(), fetchTripById(), reloadTrip()]);
-  }, [fetchPlan, fetchTripById, reloadTrip]);
+    await Promise.all([
+      fetchPlan(),
+      fetchTripById(),
+      fetchReceipts(),
+      reloadTrip(),
+    ]);
+  }, [fetchPlan, fetchTripById, fetchReceipts, reloadTrip]);
 
   // First load only — a refresh after signing keeps the summary on screen.
   if ((tripLoading && !data) || fetchingTrip || (!!tripId && planLoading && !plan))
@@ -103,6 +128,12 @@ function Summary() {
 
   const delivered = trip.status === "DELIVERED";
   const returnOpen = delivered && plan && !plan.returnDriverAt;
+
+  const litersLogged = receipts.reduce((sum, r) => sum + (r.liters ?? 0), 0);
+  const amountLogged = receipts.reduce((sum, r) => sum + (r.amountKobo ?? 0), 0);
+  const overEstimate =
+    typeof trip.fuelEstimateLiters === "number" &&
+    litersLogged > trip.fuelEstimateLiters;
 
   return (
     <>
@@ -148,15 +179,35 @@ function Summary() {
               icon="fuel"
               label="Fuel you logged"
               value={
-                <span className="font-medium text-ink-soft">
-                  Fuel stops are not in the app yet
-                </span>
+                receipts.length === 0 ? (
+                  <span className="font-medium text-ink-soft">
+                    No receipts logged
+                  </span>
+                ) : (
+                  <>
+                    {formatLiters(litersLogged)}
+                    <span className="ml-2 font-medium text-ink-soft">
+                      {receipts.length} receipt
+                      {receipts.length === 1 ? "" : "s"}
+                      {amountLogged > 0 ? ` · ${naira(amountLogged)}` : ""}
+                    </span>
+                  </>
+                )
               }
             />
           </div>
-          {/* Fuel receipt capture lands with the fuel/credit-ledger module
-              (POSTMAN_DRIVER_API.md "Not on this surface"). Until then this
-              line says so rather than showing a zero that reads as "none used". */}
+
+          {/* Over the estimate is a fact for Ops to look at, not a problem for
+              the driver to answer for: extra fuel is logged freely and there is
+              no approval flow (§19). The wording stays neutral. */}
+          {overEstimate && (
+            <p className="mt-3 text-base leading-snug text-ink">
+              That is {formatLiters(litersLogged - (trip.fuelEstimateLiters ?? 0))}{" "}
+              more than this trip allowed for. The office sees this; there is
+              nothing for you to do.
+            </p>
+          )}
+
           <p className="mt-3 text-base leading-snug text-ink-soft">
             The distance is the office&apos;s KM sheet figure, not a GPS
             reading.

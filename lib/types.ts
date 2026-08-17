@@ -215,6 +215,69 @@ export function tripFromDetail(detail: TripDetail): Trip {
   };
 }
 
+/**
+ * Fuel stop (TRACKSURE.md §12, §7).
+ *
+ * Note what is NOT here: the station carries no payment type. Credit vs cash is
+ * a property of Anfani's arrangement with the station, resolved server-side at
+ * capture and snapshotted onto the receipt — the driver picks a place, never a
+ * payment method (invariant §15.5). `GET /driver-api/stations` omits the type
+ * for exactly that reason.
+ */
+export interface Station {
+  id: string;
+  ref: string;
+  name: string;
+  address?: string | null;
+}
+
+export interface StationsResponse {
+  stations: Station[];
+  note?: string | null;
+}
+
+/** What `GET /driver-api/trips/:id/fuel-receipts` gives back, and no more. */
+export interface FuelReceipt {
+  id: string;
+  ref: string;
+  liters?: number | null;
+  /** Integer kobo. Divide by 100 at render, never before. */
+  amountKobo?: number | null;
+  capturedAt?: string | null;
+  note?: string | null;
+  stationNameAtCapture?: string | null;
+}
+
+export type FuelPaymentType = "CREDIT" | "CASH";
+
+/**
+ * The capture response. Unlike the list, this one DOES carry `resolvedType` —
+ * the one moment the driver is told how the fuel was paid for, which is worth
+ * telling them: at a credit station they hand over nothing, at a cash station
+ * they are out of pocket until Ops settles.
+ *
+ * The same payload also carries trip cost figures. They are deliberately absent
+ * from this type so no screen can reach for them.
+ */
+export interface FuelReceiptCreated extends FuelReceipt {
+  resolvedType?: FuelPaymentType | null;
+  stationId?: string;
+}
+
+export const fuelPaymentCopy: Record<
+  FuelPaymentType,
+  { title: string; body: string }
+> = {
+  CREDIT: {
+    title: "Anfani's credit account",
+    body: "This station bills the office. You should not have paid anything.",
+  },
+  CASH: {
+    title: "Paid cash",
+    body: "The office settles cash stations with you. Keep the paper receipt.",
+  },
+};
+
 export interface Complaint {
   id: string;
   tripId: string;

@@ -43,6 +43,22 @@ export function formatLiters(l: number): string {
   return `${l.toLocaleString("en-NG")} litres`;
 }
 
+const nairaFmt = new Intl.NumberFormat("en-NG", {
+  style: "currency",
+  currency: "NGN",
+  currencyDisplay: "narrowSymbol",
+  maximumFractionDigits: 0,
+});
+
+/**
+ * Money reaches this app as integer kobo and is divided by 100 only here, at
+ * render. Drivers see very little money — a fuel receipt total they typed
+ * themselves is about the extent of it.
+ */
+export function naira(kobo: number): string {
+  return nairaFmt.format(kobo / 100);
+}
+
 /**
  * "in 6 days" / "2 days late" — drivers read the gap, not the calendar.
  * Whole days, rounded, because an ETA is a ~7-day convention, not a promise.
