@@ -36,16 +36,24 @@ export default function LoginPage() {
   async function submit(e?: React.FormEvent, completedPin?: string) {
     e?.preventDefault();
     const usePin = completedPin ?? pin;
-    if (submitting || phone.trim().length < 10 || usePin.length < 4) return;
+    // Drivers type their number the way they read it — "0803 000 0001", the
+    // way it is printed on the placeholder and on their own SIM pack. The API
+    // wants digits with an optional +, so strip the punctuation here rather
+    // than bouncing them off a validator they cannot act on.
+    const usePhone = phone.replace(/[^\d+]/g, "");
+    if (submitting || usePhone.length < 10 || usePin.length < 4) return;
     setSubmitting(true);
     setError(null);
     try {
-      await login(phone.trim(), usePin);
+      await login(usePhone, usePin);
       router.replace("/");
     } catch (err) {
       setPin("");
       if (err instanceof ApiError && err.status === 401) {
         setError("That phone number or PIN is not right. Try again.");
+      } else if (err instanceof ApiError && err.status === 400) {
+        // Whatever the validator says, the driver's only move is the same.
+        setError("Check your phone number and try again.");
       } else if (err instanceof ApiError && err.status === 403) {
         // Lockout and deactivation both land here; the API's own message names
         // which, including the time the lock lifts.
@@ -109,7 +117,7 @@ export default function LoginPage() {
           <Button
             type="submit"
             loading={submitting}
-            disabled={phone.trim().length < 10 || pin.length < 4}
+            disabled={phone.replace(/[^\d+]/g, "").length < 10 || pin.length < 4}
           >
             Sign in
           </Button>
