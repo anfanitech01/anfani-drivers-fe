@@ -111,6 +111,15 @@ export default function CurrentTripPage() {
                 Sign the return declaration. It will not stop your next load.
               </Alert>
             ))}
+
+            {/* Between trips is exactly when a driver looks back at their own
+                record, and the action list below only renders on a live trip. */}
+            <ActionTile
+              href="/history"
+              icon="route"
+              title="My trips"
+              note="Everywhere you have been, and how far"
+            />
           </>
         ) : (
           <>
@@ -248,8 +257,8 @@ export default function CurrentTripPage() {
               <ActionTile
                 href="/fuel"
                 icon="fuel"
-                title="Fuel stop"
-                note="Photograph the receipt"
+                title="Fuel on this trip"
+                note="What the office has logged"
               />
               <ActionTile
                 href="/complaint"
@@ -263,6 +272,12 @@ export default function CurrentTripPage() {
                 title="End of trip"
                 note="Trip summary and return declaration"
                 tone={pending?.returnDeclaration ? "attention" : "normal"}
+              />
+              <ActionTile
+                href="/history"
+                icon="route"
+                title="My trips"
+                note="Everywhere you have been, and how far"
               />
             </nav>
 

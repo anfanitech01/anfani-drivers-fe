@@ -59,6 +59,12 @@ export interface Waybill {
   ref: string;
   tripId: string;
   type: WaybillType;
+  /**
+   * The number printed on the customer's own waybill (14 Sep 2026). It goes on
+   * Anfani's invoice and is what the customer reconciles against. Optional: a
+   * number that cannot be read must never stop the photo going up.
+   */
+  waybillNumber?: string | null;
   photoMimeType?: string;
   photoSizeBytes?: number;
   gpsLat?: number | null;
@@ -237,6 +243,8 @@ export interface StationsResponse {
 }
 
 /** What `GET /driver-api/trips/:id/fuel-receipts` gives back, and no more. */
+export type FuelPaymentType = "CREDIT" | "CASH";
+
 export interface FuelReceipt {
   id: string;
   ref: string;
@@ -246,9 +254,15 @@ export interface FuelReceipt {
   capturedAt?: string | null;
   note?: string | null;
   stationNameAtCapture?: string | null;
+  /**
+   * How this stop was paid for, as captured. Added to the list on
+   * 14 Sep 2026: the driver used to learn it at the moment they captured a
+   * receipt themselves, and capture moved to Operations — so without it here
+   * they would never find out whether they are out of pocket on a stop logged
+   * in their name.
+   */
+  resolvedType?: FuelPaymentType | null;
 }
-
-export type FuelPaymentType = "CREDIT" | "CASH";
 
 /**
  * The capture response. Unlike the list, this one DOES carry `resolvedType` —
@@ -315,4 +329,73 @@ export const violationLabels: Record<string, string> = {
 export function humanise(code: string): string {
   const s = code.replace(/_/g, " ").toLowerCase();
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/* ── Trip history (§12, added 14 Sep 2026) ──────────────────────────────── */
+
+/**
+ * One trip on the driver's own record.
+ *
+ * `kmToAndFro` is the trip's snapshotted round-trip distance — the same figure
+ * that moves the truck's service countdown, so a driver's total and Anfani's
+ * own numbers can never disagree. The journey-plan odometer is deliberately not
+ * used: it is HSE data and is missing wherever a return section was never
+ * completed.
+ *
+ * No freight, no fuel value, no cost, no margin. Shortages ARE here, because
+ * they are recorded against the driver and affect them.
+ */
+export interface HistoryTrip {
+  id: string;
+  ref: string;
+  status: TripStatus;
+  businessDate: string;
+  client: { id: string; name: string } | null;
+  destination: { id: string; name: string; state: string | null } | null;
+  truck: { id: string; truckNumber: string; registration?: string | null } | null;
+  loadingPoint: string | null;
+  goodsDescription: string | null;
+  loadTons: number | null;
+  kmToAndFro: number;
+  expectedEta: string | null;
+  deliveredAt: string | null;
+  /**
+   * Delivered by the promised date. **Null means unknown, not late** — one of
+   * the two dates is missing, and a driver's record must never show a miss that
+   * was really a gap in the data.
+   */
+  onTime: boolean | null;
+  journeyPlan: { id: string; ref: string; status: string } | null;
+  hasPostWaybill: boolean;
+  shortages: {
+    ref: string;
+    amountKobo: number;
+    status: "PENDING" | "APPROVED" | "REJECTED";
+  }[];
+}
+
+export interface HistorySummary {
+  trips: number;
+  tripsDelivered: number;
+  /** Σ round-trip km of DELIVERED trips. Undelivered km is not km run. */
+  kmTravelled: number;
+  onTime: {
+    delivered: number;
+    onTime: number;
+    /** Null when no trip carried both dates — never rendered as 0%. */
+    rate: number | null;
+    note: string;
+  };
+  shortages: {
+    approvedCount: number;
+    approvedKobo: number;
+    pendingCount: number;
+    note: string;
+  };
+}
+
+export interface HistoryPage {
+  data: HistoryTrip[];
+  meta: { page: number; pageSize: number; total: number; totalPages: number };
+  summary: HistorySummary;
 }

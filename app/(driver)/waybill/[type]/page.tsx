@@ -9,6 +9,7 @@ import type { PreparedPhoto } from "@/lib/photo";
 import { useTrip } from "@/lib/trip";
 import type { Waybill, WaybillType } from "@/lib/types";
 import { PhotoCapture } from "@/components/photo-capture";
+import { TextField } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
 import { AppBar } from "@/components/ui/app-bar";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -62,6 +63,16 @@ export default function WaybillPage() {
   const [sending, setSending] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [sent, setSent] = useState<Waybill | null>(null);
+  /**
+   * The number printed on the customer's waybill (14 Sep 2026). It goes on
+   * Anfani's invoice, and it is what the customer checks against their own
+   * paperwork.
+   *
+   * Optional on purpose. A number that cannot be read in the rain must never
+   * stop the photo going up — the photo is the evidence, and the office can
+   * fill the number in afterwards.
+   */
+  const [waybillNumber, setWaybillNumber] = useState("");
 
   const askForFix = useCallback(() => {
     requestFix()
@@ -95,6 +106,9 @@ export default function WaybillPage() {
     form.append("type", type);
     form.append("capturedAt", capturedAt ?? new Date().toISOString());
     form.append("qualityCheckPassed", String(photo.quality.passed));
+    if (waybillNumber.trim()) {
+      form.append("waybillNumber", waybillNumber.trim());
+    }
     if (fix.status === "ready") {
       form.append("gpsLat", String(fix.fix.lat));
       form.append("gpsLng", String(fix.fix.lng));
@@ -194,6 +208,20 @@ export default function WaybillPage() {
               label={copy.capture}
               hint={copy.hint}
               disabled={sending}
+            />
+
+            <TextField
+              label="Waybill number"
+              type="text"
+              inputMode="numeric"
+              value={waybillNumber}
+              disabled={sending}
+              placeholder="081084"
+              hint="The number printed on the paper. If you cannot read it, leave it — the office will add it."
+              onChange={(e) => {
+                setWaybillNumber(e.target.value);
+                setFailure(null);
+              }}
             />
 
             <GpsLine state={fix} onRetry={locate} />
