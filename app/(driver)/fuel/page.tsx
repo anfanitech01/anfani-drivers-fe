@@ -143,7 +143,10 @@ export default function FuelPage() {
             </p>
             <ul className="mt-3 divide-y divide-line">
               {rows.map((r) => (
-                <li key={r.id} className="flex items-start gap-3 py-3">
+                <li
+                  key={r.allocationRef ?? r.id}
+                  className="flex items-start gap-3 py-3"
+                >
                   <Icon
                     name="circle-check"
                     className="mt-0.5 size-6 shrink-0 text-success"
@@ -165,6 +168,20 @@ export default function FuelPage() {
                         .filter(Boolean)
                         .join(" · ")}
                     </p>
+                    {/*
+                      The litres above are what was put against THIS trip. When
+                      the fill also covered another leg, say so — otherwise a
+                      driver who watched 1,260 L go in sees 1,030 here and
+                      reasonably thinks the record is wrong.
+                    */}
+                    {typeof r.purchasedLiters === "number" &&
+                      typeof r.liters === "number" &&
+                      r.purchasedLiters > r.liters && (
+                        <p className="mt-0.5 text-base text-ink-soft">
+                          Part of a {formatLiters(r.purchasedLiters)} fill — the
+                          rest is on another leg.
+                        </p>
+                      )}
                     {r.resolvedType && (
                       <p className="mt-0.5 text-base text-ink-soft">
                         {fuelPaymentCopy[r.resolvedType].title} ·{" "}

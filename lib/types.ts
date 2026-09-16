@@ -245,12 +245,25 @@ export interface StationsResponse {
 /** What `GET /driver-api/trips/:id/fuel-receipts` gives back, and no more. */
 export type FuelPaymentType = "CREDIT" | "CASH";
 
+/**
+ * One diesel purchase, as far as this trip is concerned (16 Sep 2026).
+ *
+ * `liters` and `amountKobo` are THIS TRIP'S SHARE, not the whole fill. A
+ * driver fuelled once in Lagos for the run to Jos and back sees the litres put
+ * against this leg; `purchasedLiters` is what actually went into the tank that
+ * day, so a figure they want to dispute is traceable to the receipt.
+ */
 export interface FuelReceipt {
   id: string;
   ref: string;
+  /** The allocation line, for pointing at when a figure looks wrong. */
+  allocationRef?: string | null;
+  /** Litres put against THIS trip. */
   liters?: number | null;
-  /** Integer kobo. Divide by 100 at render, never before. */
+  /** Integer kobo, this trip's pro-rata share. Divide by 100 at render, never before. */
   amountKobo?: number | null;
+  /** The whole fill the truck was handed, when it covered more than this leg. */
+  purchasedLiters?: number | null;
   capturedAt?: string | null;
   note?: string | null;
   stationNameAtCapture?: string | null;
